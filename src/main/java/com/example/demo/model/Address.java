@@ -28,4 +28,6 @@ public class Address {
 
         private String detail;
 
+        private Boolean status;
+
 }
