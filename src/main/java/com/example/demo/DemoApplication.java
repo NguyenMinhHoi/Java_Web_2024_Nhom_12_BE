@@ -29,12 +29,17 @@ public class DemoApplication implements CommandLineRunner {
             roleRepository.save(admin);
             roleRepository.save(user);
         }
-        // Ensure Const.createEmailBase is a trusted, hardcoded SQL statement
-        if (Const.createEmailBase != null && !Const.createEmailBase.isEmpty()) {
-            jdbcTemplate.execute(Const.createEmailBase);
-        } else {
-            throw new IllegalStateException("Invalid or empty SQL statement for creating email base");
-        }
+        createOrderStatusLogTable();
+    }
+
+    private void createOrderStatusLogTable() {
+        String sql = "CREATE TABLE IF NOT EXISTS order_status_log (" +
+                "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "order_id BIGINT," +
+                "status VARCHAR(20)," +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                ")";
+        jdbcTemplate.execute(sql);
     }
 
 }

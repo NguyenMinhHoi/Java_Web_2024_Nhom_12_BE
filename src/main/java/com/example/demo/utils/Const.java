@@ -3,15 +3,10 @@ package com.example.demo.utils;
 public class Const {
     public static String DEFAULT = "DEFAULT";
 
-    public static String createEmailBase = "CREATE TABLE IF NOT EXISTS email_configurations (\n" +
-            "    id BIGINT AUTO_INCREMENT PRIMARY KEY,\n" +
-            "    host VARCHAR(255) NOT NULL,\n" +
-            "    port INT NOT NULL,\n" +
-            "    username VARCHAR(255) NOT NULL,\n" +
-            "    password VARCHAR(255) NOT NULL,\n" +
-            "    protocol VARCHAR(50) NOT NULL,\n" +
-            "    auth BOOLEAN NOT NULL,\n" +
-            "    starttls_enable BOOLEAN NOT NULL,\n" +
-            "    debug BOOLEAN NOT NULL\n" +
-            ");";
+    public static String MAIL = "MAIL";
+
+    public static String VALUE_FROM_KEY = "select value_parameter from configurations where key_parameter = :key";
+
+    public static String UPDATE_ORDER_STATUS_LOG = "INSERT INTO order_status_logs (order_id, status) VALUES (:orderId, :status)";
+
 }
