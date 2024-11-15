@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.Set;
 
 @Entity
@@ -26,7 +27,15 @@ public class Merchant {
 
         private String description;
 
+        @OneToOne
+        private Image logo;
+
+        @OneToOne
+        private Image background;
+
         private String email;
+
+        private String phoneNumber;
 
         @OneToMany
         private Set<Product> products;
@@ -40,6 +49,10 @@ public class Merchant {
 
         private Double totalSold;
 
+        private Date lastAccess;
+
         @OneToOne
         private User user;
+
+        private Boolean status;
 }
