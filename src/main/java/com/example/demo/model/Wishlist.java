@@ -19,4 +19,7 @@ public class Wishlist {
 
       @OneToMany
       private Set<Product> products;
+
+      @OneToMany
+      private Set<Merchant> shops;
 }

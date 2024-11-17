@@ -5,7 +5,7 @@ import com.example.demo.model.Role;
 import com.example.demo.model.User;
 import com.example.demo.service.RoleService;
 import com.example.demo.service.UserService;
-import com.example.demo.serivce.impl.JwtService;
+import com.example.demo.service.impl.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;

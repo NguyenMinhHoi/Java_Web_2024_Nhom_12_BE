@@ -35,5 +35,7 @@ public class Voucher {
     private Instant expirationDate;
 
     private Instant startDate;
+
+    private Boolean status;
     
 }

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.antlr.v4.runtime.misc.NotNull;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Set;
 
 @Entity
@@ -51,5 +52,11 @@ public class User implements Serializable {
     private String name;
 
     private String gender;
+
+    private Date birthDate;
+
+    private Date last_time_access;
+
+    private RoyalUser royalUser;
 
 }

@@ -33,6 +33,10 @@ public class Variant {
 
     private Double price;
 
+    private Double salePrice;
+
+    private String variantCode;
+
     @ManyToMany(fetch = FetchType.LAZY)
     private Set<OptionProduct> options;
 
