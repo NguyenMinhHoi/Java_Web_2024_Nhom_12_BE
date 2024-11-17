@@ -7,6 +7,7 @@ import com.example.demo.model.Merchant;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Date;
 import java.util.Set;
 
 @Builder
@@ -39,6 +40,8 @@ public class ProductDTO {
     private Double minPrice;
 
     private String categoryName;
+
+    private Date createdAt;
 
 
 }

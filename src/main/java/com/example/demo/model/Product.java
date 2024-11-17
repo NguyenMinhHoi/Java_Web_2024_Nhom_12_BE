@@ -4,6 +4,7 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Date;
 import java.util.Set;
 
 @Entity
@@ -19,6 +20,8 @@ public class Product {
      private String name;
 
      private String description;
+
+     private String productCode;
 
      private Long sold;
 
@@ -39,5 +42,9 @@ public class Product {
      private Category category;
 
      private Boolean status;
+
+     private Date createdDate;
+
+     private Date updatedDate;
 
 }

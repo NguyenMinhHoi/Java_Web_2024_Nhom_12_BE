@@ -7,13 +7,14 @@ import com.example.demo.utils.enumeration.OrderStatus;
 import org.springframework.data.domain.Page;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public interface OrderService extends GenerateService<Orders>{
     List<Orders> findOrdersByUser(Long userId);
     List<Orders> findOrdersByMerchant(Long merchantId);
-    List<Orders> createOrder(List<Variant> variants, Long userId,Long merchantNumber);
+    List<Orders> createOrder(List<Variant> variants, Long userId,Long merchantNumber, HashMap<String,String> details);
     Orders updateOrderStatus(Long orderId);
     List<Orders> findOrdersByDateRange(Date startDate, Date endDate);
     List<Orders> createOrderWithProductsFromManyShop(List<Variant> products, Long userId);
