@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.model.Orders;
 import com.example.demo.model.Product;
 import com.example.demo.model.Variant;
+import com.example.demo.service.dto.OrderDTO;
 import com.example.demo.utils.enumeration.OrderStatus;
 import org.springframework.data.domain.Page;
 
@@ -12,8 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 public interface OrderService extends GenerateService<Orders>{
-    List<Orders> findOrdersByUser(Long userId);
+    List<OrderDTO> findOrdersByUser(Long userId);
     List<Orders> findOrdersByMerchant(Long merchantId);
+    OrderDTO findOrderById(Long id);
     List<Orders> createOrder(List<Variant> variants, Long userId,Long merchantNumber, HashMap<String,String> details);
     Orders updateOrderStatus(Long orderId);
     List<Orders> findOrdersByDateRange(Date startDate, Date endDate);
@@ -26,7 +28,8 @@ public interface OrderService extends GenerateService<Orders>{
     List<Object[]> getTopProductsByRevenue(Date startDate, Date endDate, int limit);
     List<Object[]> getRevenueByPriceRange(Date startDate, Date endDate);
     List<Object[]> getProductRevenueAnalysis(Date startDate, Date endDate);
-    List<Object[]> getProductCategoryRevenueAnalysis(Date startDate, Date endDate);
+    List<Object[]> getProductCategoryRevenueAnalysis
+(Date startDate, Date endDate);
     List<Object[]> getMonthlyProductRevenueAnalysis(Date startDate, Date endDate);
     Orders getOrderById(Long orderId);
     Orders createOrderWithProductsFromOneShop(List<Variant> products, Long userId);
@@ -41,4 +44,8 @@ public interface OrderService extends GenerateService<Orders>{
     Map<Integer, Double> getDailyRevenueForMonth(Long merchantId, int year, int month);
     Map<Integer, Double> getDailyRevenueForQuarter(Long merchantId, int year, int quarter);
     Map<Integer, Double> getDailyRevenueForYear(Long merchantId, int year);
+
+    OrderDTO toDto(Orders order);
+
+    List<OrderDTO> findOrdersByMerchantPaged(Long merchantId, int page, int size);
 }

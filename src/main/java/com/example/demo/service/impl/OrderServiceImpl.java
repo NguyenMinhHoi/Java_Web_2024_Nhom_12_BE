@@ -3,23 +3,20 @@ package com.example.demo.service.impl;
 import com.example.demo.model.*;
 import com.example.demo.repository.OrderProductRepository;
 import com.example.demo.repository.OrderRepository;
+import com.example.demo.repository.ProductRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.OrderService;
+import com.example.demo.service.dto.OrderDTO;
 import com.example.demo.utils.CommonUtils;
 import com.example.demo.utils.OrderUtils;
 import com.example.demo.utils.enumeration.OrderStatus;
 import com.example.demo.utils.enumeration.PaymentType;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
-
-import java.beans.Transient;
-import java.time.Instant;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -35,13 +32,15 @@ public class OrderServiceImpl implements OrderService {
     private final OrderProductRepository orderProductRepository;
     private final ProductServiceImpl productServiceImpl;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private final ProductRepository productRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository, OrderProductRepository orderProductRepository, ProductServiceImpl productServiceImpl, NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+    public OrderServiceImpl(OrderRepository orderRepository, UserRepository userRepository, OrderProductRepository orderProductRepository, ProductServiceImpl productServiceImpl, NamedParameterJdbcTemplate namedParameterJdbcTemplate, ProductRepository productRepository) {
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
         this.orderProductRepository = orderProductRepository;
         this.productServiceImpl = productServiceImpl;
         this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+        this.productRepository = productRepository;
     }
 
     @Override
@@ -92,27 +91,9 @@ public class OrderServiceImpl implements OrderService {
                 );
                 variants.removeAll(firstShopProducts);
             }
+
             productMap.forEach((key, value) -> {
-                value.stream().findFirst().ifPresent(firstVariant -> {
-                    Orders order = new Orders();
-                    order.setMerchant(firstVariant.getProduct().getMerchant());
-                    order.setStatus(OrderStatus.PENDING);
-                    Orders finalOrder = orderRepository.save(order);
-                    value.forEach(variant -> {
-                        Double orderPrice = 0.0;
-                        OrderProduct orderProduct = new OrderProduct();
-                        orderProduct.setProductOrderPK(new ProductOrderPK());
-                        orderProduct.getProductOrderPK().setOrder(finalOrder);
-                        orderProduct.getProductOrderPK().setVariant(variant);
-                        orderProduct.setQuantity(variant.getQuantity());
-                        orderPrice += orderProduct.getQuantity().doubleValue();
-                        orderProductRepository.save(orderProduct);
-                        finalOrder.setTotal(finalOrder.getTotal() + orderPrice);
-                        productServiceImpl.updateProductStock(variant.getProduct().getId(), variant.getQuantity(), variant.getId());
-                    });
-                    orderRepository.save(finalOrder);
-                    orders.add(finalOrder);
-                });
+               orders.add(this.createOrderWithProductsFromOneShop(value, userId));
             });
         if(!orders.isEmpty()){
             return orders;
@@ -124,8 +105,10 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public List<Orders> findOrdersByUser(Long userId) {
-        return orderRepository.findByUserId(userId);
+    public List<OrderDTO> findOrdersByUser(Long userId) {
+        return orderRepository.findByUserId(userId).stream().map(order -> {
+            return this.findOrderById(order.getId());
+        }).collect(Collectors.toList());
     }
 
     @Override
@@ -135,6 +118,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Orders getOrderById(Long orderId) {
+        Optional<Orders> orders = orderRepository.findById(orderId);
+        if(orders.isPresent()){
+            orders.get().setProducts(orderProductRepository.findByProductOrderPK_Order_Id(orderId).stream().collect(Collectors.toSet()));;
+        }
         return orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
@@ -155,6 +142,7 @@ public class OrderServiceImpl implements OrderService {
     public Orders createOrderWithProductsFromOneShop(List<Variant> products, Long userId) {
         Orders orders = new Orders();
         orders.setMerchant(products.stream().findFirst().get().getProduct().getMerchant());
+        orders.setOrderCode(OrderUtils.generateOrderCode(namedParameterJdbcTemplate));
         orders.setStatus(OrderStatus.PENDING);
         orders.setTotal((double) 0);
         Orders finalOrder = orderRepository.save(orders);
@@ -164,7 +152,7 @@ public class OrderServiceImpl implements OrderService {
             orderProduct.getProductOrderPK().setOrder(finalOrder);
             orderProduct.getProductOrderPK().setVariant(variant);
             orderProduct.setQuantity(variant.getQuantity());
-            Double variantPrice = orderProduct.getQuantity().doubleValue();
+            Double variantPrice = orderProduct.getProductOrderPK().getVariant().getPrice()*orderProduct.getQuantity().doubleValue();
             orderProductRepository.save(orderProduct);
             finalOrder.setTotal(finalOrder.getTotal() + variantPrice);
             productServiceImpl.updateProductStock(variant.getProduct().getId(), variant.getQuantity(), variant.getId());
@@ -211,6 +199,7 @@ public class OrderServiceImpl implements OrderService {
                     order.setUser(user);
                 }
             }
+
             orders = orderRepository.saveAll(orders);
             orders.stream().forEach(order -> OrderUtils.updateOrderStatus(namedParameterJdbcTemplate, String.valueOf(order.getId()), order.getStatus().toString()));
             return orders;
@@ -434,5 +423,42 @@ public class OrderServiceImpl implements OrderService {
                         order -> order.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().getDayOfMonth(),
                         Collectors.summingDouble(Orders::getTotal)
                 ));
+    }
+
+    @Override
+    public OrderDTO toDto(Orders order) {
+          OrderDTO orderDTO = new OrderDTO();
+          orderDTO.setId(String.valueOf(order.getId()));
+          orderDTO.setTotal(String.valueOf(order.getTotal()));
+          orderDTO.setStatus(order.getStatus().name());
+          orderDTO.setOrderDate(order.getDate());
+          orderDTO.setOrderCode(order.getOrderCode());
+          orderDTO.setMerchantNumber(order.getMerchant().getId());
+          if(!CommonUtils.isEmpty(order.getUser())){
+              orderDTO.setCustomerName(order.getUser().getName());
+          }
+          return orderDTO;
+    }
+
+    @Override
+    public List<OrderDTO> findOrdersByMerchantPaged(Long merchantId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return orderRepository.findByMerchantId(merchantId, pageable)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public OrderDTO findOrderById(Long id) {
+        Orders order = this.getOrderById(id);
+            OrderDTO orderDTO = toDto(order);
+            orderDTO.setVariants(order.getProducts().stream().map(product -> {
+                Variant variant = product.getProductOrderPK().getVariant();
+                variant.setQuantity(product.getQuantity());
+                return variant;
+            }).collect(Collectors.toList()));
+            orderDTO.setAddress(order.getAddress());
+            return orderDTO;
     }
 }

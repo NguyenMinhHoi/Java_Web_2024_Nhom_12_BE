@@ -33,9 +33,13 @@ dependencies {
     implementation group: 'javax.validation', name: 'validation-api', version: '2.0.1.Final'
     implementation group: 'org.hibernate', name: 'hibernate-validator', version: '6.0.10.Final'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
     // Thêm các dependency cho JUnit 5
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
 
     // Thêm Mockito cho testing
     testImplementation 'org.mockito:mockito-junit-jupiter:3.12.4'

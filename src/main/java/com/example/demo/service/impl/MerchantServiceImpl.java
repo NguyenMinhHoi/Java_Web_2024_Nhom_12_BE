@@ -113,17 +113,19 @@ public class MerchantServiceImpl implements MerchantService {
 
     @Override
     public MerchantDTO getMerchantByMerchantID(Long id) {
+        // tim nguoi ban tu id
         Optional<Merchant> merchantOptional = merchantRepository.findById(id);
         if(merchantOptional.isPresent()) {
             Merchant merchant = merchantOptional.get();
+            // tim cac san pham cua nguoi ban do bang id
             List<Product> products = productService.getAllProductByShopId(merchant.getId());
-
+            // tim cac binh luan cua nguoi ban do
             Set<Review> reviews = new HashSet<>();
-
             products.stream().forEach(product ->{
                 reviews.addAll(reviewService.findByProductId(product.getId()));
             });
 
+            // mapping sang DTO va tra ve
             MerchantDTO merchantDTO = MerchantDTO
                     .builder()
                     .id(merchant.getId())

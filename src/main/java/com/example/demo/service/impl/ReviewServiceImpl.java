@@ -57,7 +57,10 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Review save(Review entity) {
+        // luu user tu binh luan gui ve
         entity.setUser(userService.findById(entity.getUser().getId()).get());
+
+        // luu anh neu co
         if (entity.getImages() != null && !entity.getImages().isEmpty()) {
             Set<Image> savedImages = entity.getImages().stream()
                     .map(image -> {
@@ -68,17 +71,19 @@ public class ReviewServiceImpl implements ReviewService {
                     }).collect(Collectors.toSet());
             entity.setImages(savedImages);
         }
+        // tim san pham duoc binh luan
         Product product = productRepository.findById(entity.getProduct().getId()).get();
+        // luu binh luan
         Review savedReview = reviewRepository.save(entity);
 
-        // Recalculate the product's rating
+        // tinh lai danh gia
         List<Review> productReviews = findByProductId(product.getId());
         double averageRating = productReviews.stream()
                 .mapToInt(Review::getRating)
                 .average()
                 .orElse(0.0);
 
-        // Update the product's rating
+        // luu lai ket qua danh gia
         product.setRating(averageRating);
         entity.setProduct(product);
         entity.setDate(Instant.now());
@@ -88,6 +93,7 @@ public class ReviewServiceImpl implements ReviewService {
     // Triển khai các phương thức bổ sung
     @Override
     public List<Review> findByProductId(Long productId) {
+        // Lay ra tay ca cac binh luan cua san pham do
         return findAll().stream()
                 .filter(review -> review.getProduct().getId().equals(productId))
                 .collect(Collectors.toList());

@@ -25,6 +25,8 @@ public class Orders {
       @GeneratedValue(strategy = GenerationType.IDENTITY)
       private Long id;
 
+      private String orderCode;
+
       private Date date;
 
       @ManyToOne

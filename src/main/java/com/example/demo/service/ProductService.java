@@ -34,6 +34,4 @@ public interface ProductService extends GenerateService<Product>{
     List<Product> getDiscountedProducts(int limit);
     void updateProductStock(Long productId, int quantityChange, Long variantId);
     Variant getOneVariant(Long id);
-
-
 }

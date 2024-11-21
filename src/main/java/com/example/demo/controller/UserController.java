@@ -108,6 +108,11 @@ public class UserController {
     @GetMapping("/users/{id}")
     public ResponseEntity<User> getProfile(@PathVariable Long id) {
         Optional<User> userOptional = this.userService.findById(id);
+        if (userOptional.isPresent()) {
+            userOptional.get().setUsername(null);
+            userOptional.get().setPassword(null);
+            userOptional.get().setConfirmPassword(null);
+        }
         return userOptional.map(user -> new ResponseEntity<>(user, HttpStatus.OK)).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 

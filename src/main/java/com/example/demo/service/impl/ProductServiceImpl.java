@@ -1,5 +1,6 @@
 package com.example.demo.service.impl;
 
+import com.example.demo.annotation.Retryable;
 import com.example.demo.model.*;
 import com.example.demo.repository.*;
 import com.example.demo.service.MerchantService;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.beans.Transient;
 import java.util.*;
@@ -90,19 +92,25 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public HashMap<String, Object> getDetailsProducts(Long productId) {
+        // hashmap tra ve
         HashMap<String,Object> result = new HashMap<>();
 
+        // tim san pham tu id
         Product product = productRepository.findById(productId).orElse(null);
 
+        //put product vao ket qua tra ve
         ProductDTO productDTO = toProductDTO(product);
         result.put("product",productDTO);
 
+        // tim cac phan loai tu san pham roi put vao kq tra ve
         List<Variant> variants = variantRepository.findVariantByProductId(productId);
         result.put("variants",variants);
 
+        // tim cac san pham lien quan roi put vao kq tra ve
         List<ProductDTO> relatedProducts = getRelatedProducts(productId);
         result.put("relatedProducts",relatedProducts);
 
+        // tim nguoi ban tu san pham roi put vao kq tra ve
         MerchantDTO merchantDTO = merchantService.getMerchantByMerchantID(product.getMerchant().getId());
         merchantDTO.setComments(null);
         merchantDTO.setVariants(null);
@@ -172,7 +180,7 @@ public class ProductServiceImpl implements ProductService {
         public List<ProductDTO> findAllPage(int page, int size) {
 
             List<Product> products = productRepository.findAll();
-            products.subList((page - 1) * size, Math.min(page * size, products.size()));
+            products = products.subList((page - 1) * size, Math.min(page * size, products.size()));
 
             return products.stream()
                     .map(this::toProductDTO)
@@ -465,8 +473,12 @@ public class ProductServiceImpl implements ProductService {
      * @throws RuntimeException if the product with the given productId is not found.
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateProductStock(Long productId, int quantityChange, Long variantId) {
         Variant variant = variantRepository.findVariantById(variantId);
+        if(variant.getQuantity() < quantityChange){
+            throw new RuntimeException("Insufficient stock");
+        }
         variant.setQuantity(variant.getQuantity() - quantityChange);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));

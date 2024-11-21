@@ -21,6 +21,8 @@ public interface OrderRepository extends JpaRepository<Orders,Long> {
 
     List<Orders> findByMerchantId(Long merchantId);
 
+    Page<Orders> findByMerchantId(Long merchantId, Pageable pageable);
+
     List<Orders> findByDateBetween(Date startDate, Date endDate);
 
     @Query(value = "SELECT o.* FROM orders o WHERE o.merchant_id = :merchantId", nativeQuery = true)

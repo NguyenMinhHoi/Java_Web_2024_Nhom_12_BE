@@ -26,6 +26,7 @@ public class CartServiceImpl implements CartService {
 
     @Autowired
     private VariantRepository variantRepository;
+
     @Autowired
     private UserRepository userRepository;
 
@@ -62,6 +63,7 @@ public class CartServiceImpl implements CartService {
             cart.setUser(userRepository.findById(userId).get());
             cart.setVariants(new HashSet<>());
         }
+
 
         Variant product = variantRepository.findVariantById(variantId);
         if (product != null) {
