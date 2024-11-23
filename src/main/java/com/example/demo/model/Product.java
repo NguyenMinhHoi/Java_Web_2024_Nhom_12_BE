@@ -47,4 +47,8 @@ public class Product {
 
      private Date updatedDate;
 
+     private Double maxPrice;
+
+     private Double minPrice;
+
 }

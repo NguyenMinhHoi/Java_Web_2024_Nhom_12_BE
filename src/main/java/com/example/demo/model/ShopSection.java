@@ -16,8 +16,10 @@ public class ShopSection {
 
     private String name;
 
+    private String description;
+
     @ManyToMany
-    private Set<Product> productSet;
+    private Set<Product> products;
 
     @ManyToOne
     private Merchant merchant;

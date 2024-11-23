@@ -3,10 +3,7 @@ package com.example.demo.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 
@@ -16,6 +13,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
+@EqualsAndHashCode(exclude = {"order", "variant"})
+@ToString(exclude = {"order", "variant"})
 public class ProductOrderPK implements Serializable {
     @JsonBackReference
     @ManyToOne(optional = false, fetch = FetchType.LAZY)

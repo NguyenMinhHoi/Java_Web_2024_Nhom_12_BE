@@ -1,8 +1,11 @@
 package com.example.demo.service;
 
 import com.example.demo.model.*;
+import com.example.demo.service.dto.FilterDTO;
 import com.example.demo.service.dto.ProductDTO;
 import org.aspectj.weaver.ast.Var;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,4 +37,6 @@ public interface ProductService extends GenerateService<Product>{
     List<Product> getDiscountedProducts(int limit);
     void updateProductStock(Long productId, int quantityChange, Long variantId);
     Variant getOneVariant(Long id);
+
+    Page<Product> findProductsByFilter(FilterDTO filterDTO, Pageable pageable);
 }

@@ -6,6 +6,7 @@ import com.example.demo.repository.*;
 import com.example.demo.service.MerchantService;
 import com.example.demo.service.ProductService;
 import com.example.demo.service.UserService;
+import com.example.demo.service.dto.FilterDTO;
 import com.example.demo.service.dto.MerchantDTO;
 import com.example.demo.service.dto.ProductDTO;
 import com.example.demo.utils.AccessUtils;
@@ -13,6 +14,8 @@ import com.example.demo.utils.CodeUtils;
 import com.example.demo.utils.CommonUtils;
 import com.example.demo.utils.Const;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -527,5 +530,29 @@ public class ProductServiceImpl implements ProductService {
     public Variant getOneVariant(Long id) {
         List<Variant> variants = variantRepository.findVariantByProductId(id);
         return variants.get(0);
+    }
+
+    @Override
+    public Page<Product> findProductsByFilter(FilterDTO filterDTO, Pageable pageable) {
+        List<Product> filteredProducts = productRepository.findAll();
+        if(filterDTO.getCategory()!= null){
+            filteredProducts = filteredProducts.stream().filter(product -> product.getCategory().getId() == filterDTO.getCategory().getId()).collect(Collectors.toList());
+        }
+        if(filterDTO.getPriceMax()!= null && filterDTO.getPriceMin()!= null){
+            double minPrice = filterDTO.getPriceMin();
+            double maxPrice = filterDTO.getPriceMax();
+            filteredProducts = filteredProducts.stream().filter(product -> product.getMinPrice() >= minPrice && product.getMaxPrice() <= maxPrice).collect(Collectors.toList());
+        }
+        if(filterDTO.getAddress()!= null){
+            filteredProducts = filteredProducts.stream().filter(product -> product.getMerchant().getAddress().getProvince().equals(filterDTO.getAddress())).collect(Collectors.toList());
+        }
+        if(filterDTO.getRating() != null){
+            filteredProducts = filteredProducts.stream().filter(product -> product.getRating() >= filterDTO.getRating()).collect(Collectors.toList());
+        }
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), filteredProducts.size());
+        List<Product> pageContent = filteredProducts.subList(start, end);
+        return new PageImpl<>(pageContent, pageable, filteredProducts.size());
     }
 }

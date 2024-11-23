@@ -15,6 +15,7 @@ public class OrderDTO {
     private List<Variant> variants;
     private Long userId;
     private Long merchantNumber;
+    private String merchantName;
     private HashMap<String, String> detail;
     private String name;
 

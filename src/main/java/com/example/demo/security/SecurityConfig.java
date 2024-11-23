@@ -81,7 +81,7 @@ public class SecurityConfig {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/login", "/register","/products/**","/merchants","/categories/**","/reviews/**","/addresses/**","/orders/**","/users/**","/ws/**").permitAll()
+                                .requestMatchers("/login", "/register","/products/**","/merchants","/categories/**","/reviews/**","/addresses/**","/orders/**","/users/**","/ws/**","/shopsections/**").permitAll()
                                 .requestMatchers(HttpMethod.GET,"/merchants/details/**").permitAll()
                                 .requestMatchers("/users/**","/cart/**","/wishlist/**").hasAnyAuthority("ROLE_USER")
                                 .requestMatchers("/admin/**").hasAnyAuthority("ROLE_ADMIN")
@@ -98,17 +98,5 @@ public class SecurityConfig {
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(Customizer.withDefaults())
                 .build();
-    }
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Auth-Token"));
-        configuration.setExposedHeaders(Collections.singletonList("X-Auth-Token"));
-        configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
     }
 }

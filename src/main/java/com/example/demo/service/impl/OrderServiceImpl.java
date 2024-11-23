@@ -13,6 +13,7 @@ import com.example.demo.utils.enumeration.OrderStatus;
 import com.example.demo.utils.enumeration.PaymentType;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -105,10 +106,15 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public List<OrderDTO> findOrdersByUser(Long userId) {
-        return orderRepository.findByUserId(userId).stream().map(order -> {
-            return this.findOrderById(order.getId());
-        }).collect(Collectors.toList());
+    public Page<OrderDTO> findOrdersByUser(Long userId, int page, int size, String status) {
+        Pageable pageable = PageRequest.of(page-1, size);
+        OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+        Page<Orders> ordersPage = orderRepository.findByUserId(userId, pageable);
+        List<OrderDTO> orderDTOs = ordersPage.getContent().stream()
+                .filter(order -> order.getStatus() == orderStatus)
+                .map(order -> this.findOrderById(order.getId()))
+                .collect(Collectors.toList());
+        return new PageImpl<>(orderDTOs, pageable, ordersPage.getTotalElements());
     }
 
     @Override
@@ -236,7 +242,6 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public Orders updateOrderStatus(Long orderId) {
-        // Implementation to update the status of an order
         Orders order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         order.setStatus(getNextStatus(order.getStatus()));
@@ -411,7 +416,14 @@ public class OrderServiceImpl implements OrderService {
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);
 
-        return getDailyRevenueForDateRange(merchantId, startDate, endDate);
+        Date start = Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date end = Date.from(endDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant());
+
+        return getOrdersByMerchantAndDateRange(merchantId, start, end).stream()
+                .collect(Collectors.groupingBy(
+                        order -> order.getDate().toInstant().atZone(ZoneId.systemDefault()).getMonthValue(),
+                        Collectors.summingDouble(Orders::getTotal)
+                ));
     }
 
     private Map<Integer, Double> getDailyRevenueForDateRange(Long merchantId, LocalDate startDate, LocalDate endDate) {
@@ -426,6 +438,31 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Map<Integer, Double> getRevenueByShopId(Long shopId, String time) {
+        Map<Integer, Double> revenueMap = new HashMap<>();
+        switch (time){
+            case "thisMonth":
+                 revenueMap = this.getDailyRevenueForMonth(shopId, LocalDate.now().getYear(), LocalDate.now().getMonthValue());
+                 break;
+            case "lastMonth":
+                revenueMap = this.getDailyRevenueForMonth(shopId, LocalDate.now().getYear(), LocalDate.now().getMonthValue()-1);
+                break;
+            case "lastQuarter":
+                revenueMap = this.getDailyRevenueForQuarter(shopId, LocalDate.now().getYear(), LocalDate.now().getMonthValue()/4+1);
+                break;
+            case "lastYear":
+                revenueMap = this.getDailyRevenueForYear(shopId, LocalDate.now().getYear()-1);
+                break;
+            case "thisYear":
+                revenueMap = this.getDailyRevenueForYear(shopId, LocalDate.now().getYear());
+                break;
+            default:
+        }
+        return revenueMap;
+    }
+
+    @Transactional
+    @Override
     public OrderDTO toDto(Orders order) {
           OrderDTO orderDTO = new OrderDTO();
           orderDTO.setId(String.valueOf(order.getId()));
@@ -434,8 +471,19 @@ public class OrderServiceImpl implements OrderService {
           orderDTO.setOrderDate(order.getDate());
           orderDTO.setOrderCode(order.getOrderCode());
           orderDTO.setMerchantNumber(order.getMerchant().getId());
+          orderDTO.setMerchantName(order.getMerchant().getName());
+          if(!CommonUtils.isEmpty(order.getProducts())){
+              orderDTO.setVariants(order.getProducts().stream().map(product -> {
+                  Variant variant = product.getProductOrderPK().getVariant();
+                  variant.setQuantity(product.getQuantity());
+                  return variant;
+              }).toList());
+          }
           if(!CommonUtils.isEmpty(order.getUser())){
               orderDTO.setCustomerName(order.getUser().getName());
+              orderDTO.setName(order.getUser().getName());
+              orderDTO.setEmail(order.getUser().getEmail());
+              orderDTO.setPhone(order.getUser().getPhoneNumber());
           }
           return orderDTO;
     }
@@ -449,10 +497,11 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     @Override
     public OrderDTO findOrderById(Long id) {
         Orders order = this.getOrderById(id);
-            OrderDTO orderDTO = toDto(order);
+        OrderDTO orderDTO = toDto(order);
             orderDTO.setVariants(order.getProducts().stream().map(product -> {
                 Variant variant = product.getProductOrderPK().getVariant();
                 variant.setQuantity(product.getQuantity());
@@ -460,5 +509,81 @@ public class OrderServiceImpl implements OrderService {
             }).collect(Collectors.toList()));
             orderDTO.setAddress(order.getAddress());
             return orderDTO;
+    }
+
+    @Override
+    public Map<String, Object> compareRevenueWithPreviousMonth(Long shopId) {
+        LocalDate now = LocalDate.now();
+        int currentYear = now.getYear();
+        int currentMonth = now.getMonthValue();
+        int previousMonth = currentMonth - 1;
+        int previousYear = currentYear;
+
+        if (previousMonth == 0) {
+            previousMonth = 12;
+            previousYear--;
+        }
+
+        Map<Integer, Double> currentMonthRevenue = getDailyRevenueForMonth(shopId, currentYear, currentMonth);
+        Map<Integer, Double> previousMonthRevenue = getDailyRevenueForMonth(shopId, previousYear, previousMonth);
+
+        double currentTotal = currentMonthRevenue.values().stream().mapToDouble(Double::doubleValue).sum();
+        double previousTotal = previousMonthRevenue.values().stream().mapToDouble(Double::doubleValue).sum();
+
+        double percentageChange = ((currentTotal - previousTotal) / previousTotal) * 100;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("currentMonthRevenue", currentTotal);
+        result.put("previousMonthRevenue", previousTotal);
+        result.put("percentageChange", percentageChange);
+        result.put("currentMonthData", currentMonthRevenue);
+        result.put("previousMonthData", previousMonthRevenue);
+
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> compareOrderCountWithPreviousMonth(Long shopId) {
+        LocalDate now = LocalDate.now();
+        int currentYear = now.getYear();
+        int currentMonth = now.getMonthValue();
+        int previousMonth = currentMonth - 1;
+        int previousYear = currentYear;
+
+        if (previousMonth == 0) {
+            previousMonth = 12;
+            previousYear--;
+        }
+
+        Map<Integer, Long> currentMonthOrderCount = getMonthlyOrderCount(shopId, currentYear, currentMonth);
+        Map<Integer, Long> previousMonthOrderCount = getMonthlyOrderCount(shopId, previousYear, previousMonth);
+
+        long currentTotal = currentMonthOrderCount.values().stream().mapToLong(Long::longValue).sum();
+        long previousTotal = previousMonthOrderCount.values().stream().mapToLong(Long::longValue).sum();
+
+        double percentageChange = previousTotal != 0 ? ((currentTotal - previousTotal) / (double) (previousTotal == 0 ? 1 : previousTotal)) * 100 : 0;
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("currentMonthOrderCount", currentTotal);
+        result.put("previousMonthOrderCount", previousTotal);
+        result.put("percentageChange", percentageChange);
+        result.put("currentMonthData", currentMonthOrderCount);
+        result.put("previousMonthData", previousMonthOrderCount);
+
+        return result;
+    }
+
+    private Map<Integer, Long> getMonthlyOrderCount(Long shopId, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.plusMonths(1).minusDays(1);
+
+        Date start = Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        Date end = Date.from(endDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant());
+
+        return getOrdersByMerchantAndDateRange(shopId, start, end).stream()
+                .collect(Collectors.groupingBy(
+                        order -> order.getDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().getDayOfMonth(),
+                        Collectors.counting()
+                ));
     }
 }
