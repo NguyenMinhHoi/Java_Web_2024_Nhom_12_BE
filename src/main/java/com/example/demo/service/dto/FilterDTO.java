@@ -13,6 +13,7 @@ public class FilterDTO {
       private Double priceMax;
       private Double priceMin;
       private Boolean isSale;
-      private Category category;
+      private Long categoryId;
       private Double rating;
+      private String term;
 }

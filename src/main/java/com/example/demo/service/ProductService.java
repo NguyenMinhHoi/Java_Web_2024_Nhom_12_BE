@@ -38,5 +38,5 @@ public interface ProductService extends GenerateService<Product>{
     void updateProductStock(Long productId, int quantityChange, Long variantId);
     Variant getOneVariant(Long id);
 
-    Page<Product> findProductsByFilter(FilterDTO filterDTO, Pageable pageable);
+    Page<ProductDTO> findProductsByFilter(FilterDTO filterDTO, Pageable pageable);
 }

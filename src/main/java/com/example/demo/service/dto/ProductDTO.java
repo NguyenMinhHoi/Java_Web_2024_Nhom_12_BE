@@ -43,5 +43,11 @@ public class ProductDTO {
 
     private Date createdAt;
 
+    private String merchantAddress;
+
+    private String salePrice;
+
+    private String discount;
+
 
 }

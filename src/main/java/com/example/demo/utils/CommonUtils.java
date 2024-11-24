@@ -34,6 +34,7 @@ public class CommonUtils {
         return string == null || string.trim().length() == 0;
     }
 
+
     /*default zone id is Viet Nam*/
     public static String currentDateTimeByZoneId(String zoneId, String format, int addMinutes) {
         if (isEmpty(zoneId)) {
