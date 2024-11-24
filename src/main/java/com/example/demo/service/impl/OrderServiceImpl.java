@@ -158,6 +158,7 @@ public class OrderServiceImpl implements OrderService {
             orderProduct.getProductOrderPK().setOrder(finalOrder);
             orderProduct.getProductOrderPK().setVariant(variant);
             orderProduct.setQuantity(variant.getQuantity());
+            orderProduct.setPrice(variant.getPrice());
             Double variantPrice = orderProduct.getProductOrderPK().getVariant().getPrice()*orderProduct.getQuantity().doubleValue();
             orderProductRepository.save(orderProduct);
             finalOrder.setTotal(finalOrder.getTotal() + variantPrice);
@@ -476,6 +477,7 @@ public class OrderServiceImpl implements OrderService {
               orderDTO.setVariants(order.getProducts().stream().map(product -> {
                   Variant variant = product.getProductOrderPK().getVariant();
                   variant.setQuantity(product.getQuantity());
+                  variant.setPrice(product.getPrice() == null ? variant.getPrice() : product.getPrice());
                   return variant;
               }).toList());
           }

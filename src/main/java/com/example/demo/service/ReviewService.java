@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ReviewService extends GenerateService<Review> {
-    List<Review> findByProductId(Long productId);
+    List<Review> findByProductId(Long productId);//
     List<Review> findByUserId(Long userId);
     List<Review> findByRating(Integer rating);
     List<Review> findLatestReviews(int limit);

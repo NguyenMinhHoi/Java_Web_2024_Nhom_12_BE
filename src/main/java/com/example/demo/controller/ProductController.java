@@ -7,8 +7,11 @@ import com.example.demo.model.Review;
 import com.example.demo.model.Variant;
 import com.example.demo.service.MerchantService;
 import com.example.demo.service.ProductService;
+import com.example.demo.service.dto.FilterDTO;
 import com.example.demo.service.dto.ProductDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -159,4 +162,10 @@ public class ProductController {
       public ResponseEntity<Object> getOneVariant(@PathVariable Long productId) {
             return ResponseEntity.ok(productService.getOneVariant(productId));
       }
+      @PostMapping("filter")
+      public ResponseEntity<Object> filterProduct(@RequestBody FilterDTO filterDTO, @RequestParam int size, @RequestParam int page) {
+          Pageable pageable = PageRequest.of(page-1, size);
+          return ResponseEntity.ok(productService.findProductsByFilter(filterDTO, pageable));
+      }
+
 }

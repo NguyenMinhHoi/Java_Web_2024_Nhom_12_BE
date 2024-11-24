@@ -3,6 +3,7 @@ package com.example.demo.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 
 import java.util.Date;
 import java.util.Set;
@@ -25,6 +26,7 @@ public class Product {
 
      private Long sold;
 
+     @Column(columnDefinition = "boolean default true")
      private Boolean isDiscount;
 
      @ManyToOne

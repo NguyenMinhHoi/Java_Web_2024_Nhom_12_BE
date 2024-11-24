@@ -72,24 +72,28 @@ public class ProductServiceImpl implements ProductService {
                 .createdAt(product.getCreatedDate())
                 .build();
         List<Variant> variants = variantRepository.findVariantByProductId(product.getId());
+        if(!CommonUtils.isEmpty(product.getIsDiscount()) && product.getIsDiscount()){
+            Optional<Variant> maxDiscountVariant = variants.stream()
+                    .filter(v -> v.getSalePrice() != null && v.getPrice() != null)
+                    .max(Comparator.comparingDouble(v -> v.getPrice() - v.getSalePrice()));
+
+            if (maxDiscountVariant.isPresent()) {
+                Variant variant = maxDiscountVariant.get();
+                productDTO.setSalePrice(String.valueOf(maxDiscountVariant.get().getSalePrice()));
+                productDTO.setDiscount(String.valueOf((1 - variant.getSalePrice()/variant.getPrice())*100));
+            }
+            productDTO.setIsDiscount(product.getIsDiscount());
+        }
         
-        if (variants != null && !variants.isEmpty()) {
-            Double maxPrice = variants.stream()
-                    .map(Variant::getPrice)
-                    .filter(Objects::nonNull)
-                    .max(Double::compare)
-                    .orElse(null);
-            Double minPrice = variants.stream()
-                    .map(Variant::getPrice)
-                    .filter(Objects::nonNull)
-                    .min(Double::compare)
-                    .orElse(null);
-            productDTO.setMaxPrice(maxPrice);
-            productDTO.setMinPrice(minPrice);
+        if (!CommonUtils.isEmpty(product.getMaxPrice()) && !CommonUtils.isEmpty(product.getMinPrice())){
+            productDTO.setMaxPrice(product.getMaxPrice());
+            productDTO.setMinPrice(product.getMinPrice());
         } else {
             productDTO.setMaxPrice(null);
             productDTO.setMinPrice(null);
         }
+        productDTO.setMerchantAddress(product.getMerchant().getAddress().getProvince());
+
         return productDTO;
     }
 
@@ -280,32 +284,42 @@ public class ProductServiceImpl implements ProductService {
      * 2. Creates new variants by combining all possible options from different groups.
      * 3. Saves the newly created variants to the database.
      */
-    @Transient
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public List<Variant> saveVariants(List<GroupOption> groupOptions, Long productId) {
         if(!CommonUtils.isEmpty(userService.getCurrentUser().getId())){
             AccessUtils.setAccessMerchant(namedParameterJdbcTemplate,userService.getCurrentUser().getId());
         }
         try {
+            for (GroupOption groupOption : groupOptions) {
+                if(groupOption.getOptions().size()  == 0){
+                    throw new RuntimeException("Group option must have at least one option");
+                }
+            }
+
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new RuntimeException("Product not found"));
             product.setUpdatedDate(new Date(System.currentTimeMillis()));
     
             List<Variant> productVariants = variantRepository.findVariantByProductId(productId);
+
+            productVariants.forEach(variant -> {
+                if(variant.getOptions().size() < groupOptions.size()){
+                    variantRepository.delete(variant);
+                }
+            });
     
-            Map<Set<String>, Image> optionToImageMap = new HashMap<>();
+            Map<Set<String>, Variant> optionToMap = new HashMap<>();
             for (Variant variant : productVariants) {
                 Set<String> optionName = variant.getOptions().stream()
                         .map(OptionProduct::getName)
                         .collect(Collectors.toSet());
-                optionToImageMap.put(optionName, variant.getImage());
+                optionToMap.put(optionName, variant);
             }
     
             groupOptions.stream().flatMap(group -> group.getOptions().stream())
                     .forEach(optionRepository::save);
-    
-            variantRepository.deleteAll(productVariants);
-    
+
             groupOptions.forEach(groupOption -> groupOption.getOptions()
                     .forEach(optionProduct -> optionProduct.setGroupName(groupOption.getName())));
             List<GroupOption> savedGroupOptions = groupOptionRepository.saveAll(groupOptions);
@@ -315,24 +329,29 @@ public class ProductServiceImpl implements ProductService {
             productRepository.save(product);
     
             List<Variant> newVariants = generateVariants(savedGroupOptions, product);
-    
+
+            List<Variant> updatedVariants = new ArrayList<>();
             for (Variant newVariant : newVariants) {
                 Set<String> newVariantOptionNames = newVariant.getOptions().stream()
                         .map(OptionProduct::getName)
                         .collect(Collectors.toSet());
-    
-                Image matchingImage = optionToImageMap.get(newVariantOptionNames);
-                newVariant.setImage(matchingImage);
+
+                Variant matchingvariant = optionToMap.get(newVariantOptionNames);
+                if(!CommonUtils.isEmpty(matchingvariant)){
+                    updatedVariants.add(matchingvariant);
+                } else {
+                    updatedVariants.add(newVariant);
+                }
             }
-    
-            newVariants.forEach(variant -> {
+            newVariants = updatedVariants;
+            updatedVariants.forEach(variant -> {
                 if(!CommonUtils.isEmpty(variant.getImage())){
                     variant.getImage().setId(null);
                 }
                 variant.setVariantCode(CodeUtils.generateVariantCode(String.valueOf(variant.getProduct().getCategory().getId())));
                 variant.setProduct(product);
             });
-            return variantRepository.saveAll(newVariants);
+            return variantRepository.saveAll(updatedVariants);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -352,6 +371,31 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void updateVariant(List<Variant> variants) {
         AccessUtils.setAccessMerchant(namedParameterJdbcTemplate,userService.getCurrentUser().getId());
+        var ref = new Object() {
+            double maxPrice = 0;
+            double minPrice = 0;
+            Boolean isSale = false;
+        };
+
+        variants.forEach(variant -> {
+            if (!CommonUtils.isEmpty(variant.getPrice()) ) {
+                if(variant.getPrice() > ref.maxPrice){
+                    ref.maxPrice = variant.getPrice();
+                }
+                if (variant.getPrice() < ref.minPrice || ref.minPrice == 0) {
+                    ref.minPrice = variant.getPrice();
+                }
+            }
+            if(!CommonUtils.isEmpty(variant.getSalePrice())){
+                ref.isSale = true;
+            }
+        });
+        Long productId = variants.stream().findFirst().get().getProduct().getId();
+        Product product = productRepository.findById(productId).get();
+        product.setMinPrice(ref.minPrice);
+        product.setMaxPrice(ref.maxPrice);
+        product.setIsDiscount(ref.isSale);
+        productRepository.save(product);
         variantRepository.saveAll(variants);
     }
 
@@ -483,6 +527,7 @@ public class ProductServiceImpl implements ProductService {
             throw new RuntimeException("Insufficient stock");
         }
         variant.setQuantity(variant.getQuantity() - quantityChange);
+        variant.getProduct().getMerchant().setTotalSold(variant.getProduct().getMerchant().getTotalSold()  == null ? 0 : variant.getProduct().getMerchant().getTotalSold() + quantityChange);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         product.setSold(CommonUtils.isEmpty(product.getSold()) ? quantityChange : product.getSold() + quantityChange);
@@ -532,27 +577,77 @@ public class ProductServiceImpl implements ProductService {
         return variants.get(0);
     }
 
+    /**
+     * Finds and filters products based on specified criteria.
+     * 
+     * This method applies filters to the product list based on category, price range,
+     * merchant address, and product rating. It then paginates the filtered results.
+     *
+     * @param filterDTO A FilterDTO object containing the filter criteria:
+     *                  - category: filters products by category
+     *                  - priceMin and priceMax: filters products within the specified price range
+     *                  - address: filters products by merchant's address (province)
+     *                  - rating: filters products with ratings greater than or equal to the specified value
+     * @param pageable A Pageable object specifying the pagination information
+     * @return A Page of Product objects that match the filter criteria and pagination settings.
+     *         The Page object contains a subset of the filtered products based on the
+     *         pageable parameters, along with pagination metadata.
+     */
     @Override
-    public Page<Product> findProductsByFilter(FilterDTO filterDTO, Pageable pageable) {
+    public Page<ProductDTO> findProductsByFilter(FilterDTO filterDTO, Pageable pageable) {
         List<Product> filteredProducts = productRepository.findAll();
-        if(filterDTO.getCategory()!= null){
-            filteredProducts = filteredProducts.stream().filter(product -> product.getCategory().getId() == filterDTO.getCategory().getId()).collect(Collectors.toList());
+        if (!CommonUtils.isEmpty(filterDTO.getCategoryId())) {
+            filteredProducts = filteredProducts.stream()
+                    .filter(product -> product.getCategory().getId() == (filterDTO.getCategoryId()))
+                    .collect(Collectors.toList());
         }
-        if(filterDTO.getPriceMax()!= null && filterDTO.getPriceMin()!= null){
+        
+        if (!CommonUtils.isEmpty(filterDTO.getPriceMax()) && !CommonUtils.isEmpty(filterDTO.getPriceMin())) {
             double minPrice = filterDTO.getPriceMin();
             double maxPrice = filterDTO.getPriceMax();
-            filteredProducts = filteredProducts.stream().filter(product -> product.getMinPrice() >= minPrice && product.getMaxPrice() <= maxPrice).collect(Collectors.toList());
+            filteredProducts = filteredProducts.stream()
+                    .filter(product -> product.getMinPrice() != null && product.getMaxPrice() != null &&
+                            product.getMinPrice() >= minPrice && product.getMaxPrice() <= maxPrice)
+                    .collect(Collectors.toList());
         }
-        if(filterDTO.getAddress()!= null){
-            filteredProducts = filteredProducts.stream().filter(product -> product.getMerchant().getAddress().getProvince().equals(filterDTO.getAddress())).collect(Collectors.toList());
+        
+        if (!CommonUtils.isEmpty(filterDTO.getAddress())) {
+            filteredProducts = filteredProducts.stream()
+                    .filter(product -> product.getMerchant().getAddress().getProvince().equals(filterDTO.getAddress()))
+                    .collect(Collectors.toList());
         }
-        if(filterDTO.getRating() != null){
-            filteredProducts = filteredProducts.stream().filter(product -> product.getRating() >= filterDTO.getRating()).collect(Collectors.toList());
+        
+        if (!CommonUtils.isEmpty(filterDTO.getRating())) {
+            filteredProducts = filteredProducts.stream()
+                    .filter(product -> {
+                        double rate = !CommonUtils.isEmpty(product.getRating()) ? product.getRating() : 0;
+                            if(rate >= filterDTO.getRating()){
+                                return true;
+                            }
+                        return false;
+                    })
+                    .collect(Collectors.toList());
         }
+        
+        if (!CommonUtils.isEmpty(filterDTO.getIsSale()) && filterDTO.getIsSale()) {
+            filteredProducts = filteredProducts.stream()
+                .filter(product -> product.getIsDiscount() != null && product.getIsDiscount())
+                .collect(Collectors.toList());
+        }
+
 
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), filteredProducts.size());
-        List<Product> pageContent = filteredProducts.subList(start, end);
+
+        List<ProductDTO> pageContent;
+        if (start < end) {
+            pageContent = filteredProducts.subList(start, end).stream()
+                    .map(this::toProductDTO)
+                    .collect(Collectors.toList());
+        } else {
+            pageContent = new ArrayList<>();
+        }
+
         return new PageImpl<>(pageContent, pageable, filteredProducts.size());
     }
 }

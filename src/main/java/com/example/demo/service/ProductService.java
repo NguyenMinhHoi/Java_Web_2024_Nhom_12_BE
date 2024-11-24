@@ -19,7 +19,7 @@ public interface ProductService extends GenerateService<Product>{
 
     ProductDTO toProductDTO(Product product);
 
-    HashMap<String,Object> getDetailsProducts(Long productId);
+    HashMap<String,Object> getDetailsProducts(Long productId);//
     List<Variant> getVariantsByProductId(Long productId);
     void updateVariant(List<Variant> variants);
 
@@ -38,5 +38,5 @@ public interface ProductService extends GenerateService<Product>{
     void updateProductStock(Long productId, int quantityChange, Long variantId);
     Variant getOneVariant(Long id);
 
-    Page<Product> findProductsByFilter(FilterDTO filterDTO, Pageable pageable);
+    Page<ProductDTO> findProductsByFilter(FilterDTO filterDTO, Pageable pageable);
 }
