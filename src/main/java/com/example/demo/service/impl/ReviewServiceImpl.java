@@ -84,7 +84,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElse(0.0);
 
         // luu lai ket qua danh gia
-        product.setRating(averageRating);
+        product.setRating(averageRating); 
         entity.setProduct(product);
         entity.setDate(Instant.now());
         return reviewRepository.save(entity);

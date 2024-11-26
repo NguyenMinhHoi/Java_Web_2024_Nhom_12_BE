@@ -17,6 +17,6 @@ public interface MerchantService extends GenerateService<Merchant> {
     Merchant getMerchantById(Long id);
 
 
-    MerchantDTO getMerchantByMerchantID(Long id);
+    MerchantDTO getMerchantByMerchantID(Long id);//
 
 }

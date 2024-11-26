@@ -19,7 +19,7 @@ public interface ProductService extends GenerateService<Product>{
 
     ProductDTO toProductDTO(Product product);
 
-    HashMap<String,Object> getDetailsProducts(Long productId);
+    HashMap<String,Object> getDetailsProducts(Long productId);//
     List<Variant> getVariantsByProductId(Long productId);
     void updateVariant(List<Variant> variants);
 

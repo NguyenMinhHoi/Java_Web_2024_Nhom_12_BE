@@ -16,4 +16,6 @@ public interface WishlistService extends GenerateService<Wishlist> {
 
     @Transactional
     Wishlist removeShopFromWishlist(Long wishlistId, Long shopId);
+
+    Long getMerchantFollowers(Long merchantId);
 }
