@@ -1,10 +1,7 @@
 package com.example.demo.model;
 
 import com.example.demo.utils.enumeration.ConditionType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,5 +17,14 @@ public class VoucherCondition {
 
        private ConditionType conditionType;
 
-       public String description;
+       private String description;
+
+       @ManyToOne
+       @JoinColumn(name = "category_id")
+       private Category category;
+
+       @ManyToOne
+       private Product product;
+
+       private Double minPrice;
 }

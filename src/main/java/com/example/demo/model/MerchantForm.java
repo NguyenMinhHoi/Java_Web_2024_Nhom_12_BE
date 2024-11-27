@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Data
@@ -39,5 +40,7 @@ public class MerchantForm {
 
     @Lob
     private byte[] documents;
+
+    private Date createddDate;
 
 }

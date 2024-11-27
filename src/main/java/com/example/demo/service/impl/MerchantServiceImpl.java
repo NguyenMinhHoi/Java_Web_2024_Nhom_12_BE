@@ -1,20 +1,21 @@
 package com.example.demo.service.impl;
 
 import com.example.demo.model.*;
+import com.example.demo.repository.MerchantFormRepository;
 import com.example.demo.repository.MerchantRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.*;
 import com.example.demo.service.dto.MerchantDTO;
 import com.example.demo.utils.CommonUtils;
+import com.example.demo.utils.enumeration.FormStatus;
+import com.example.demo.utils.enumeration.FormType;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,9 @@ public class MerchantServiceImpl implements MerchantService {
 
     @Autowired
     private MerchantRepository merchantRepository;
+
+    @Autowired
+    private MerchantFormRepository merchantFormRepository;
 
     @Autowired
     @Lazy
@@ -59,16 +63,14 @@ public class MerchantServiceImpl implements MerchantService {
 
     @Override
     public Merchant save(Merchant entity) {
-
         return null;
     }
 
     @Override
-    public void approveMerchantRegistration(Merchant merchant) {
-        // Logic to approve the merchant
-        // ...
-
-        // Send acceptance email
+    public void approveMerchantRegistration(MerchantForm merchantForm) {
+        Merchant merchant = merchantForm.getMerchant();
+        merchantForm.setStatus(FormStatus.APPROVED);
+        merchantFormRepository.save(merchantForm);
         try {
             emailService.sendMerchantRegistrationAcceptance(merchant.getEmail(), merchant.getName());
         } catch (Exception e) {
@@ -79,7 +81,6 @@ public class MerchantServiceImpl implements MerchantService {
 
     @Override
     public Merchant createMerchant(Merchant merchant) {
-        // Add any necessary validation or business logic here
         Optional<User> user = userService.findById(merchant.getUser().getId());
         if(user.isPresent()){
             merchant.setUser(user.get());
@@ -90,7 +91,14 @@ public class MerchantServiceImpl implements MerchantService {
         }else{
             throw new RuntimeException("User not found");
         }
-        return merchantRepository.save(merchant);
+        merchant.setStatus(false);
+        merchant = merchantRepository.save(merchant);
+        MerchantForm merchantForm = new MerchantForm();
+        merchantForm.setMerchant(merchant);
+        merchantForm.setFormType(FormType.REGISTRATION);
+        merchantForm.setCreateddDate(new Date());
+        merchantFormRepository.save(merchantForm);
+        return merchant;
     }
 
     @Override
@@ -102,11 +110,14 @@ public class MerchantServiceImpl implements MerchantService {
         return merchant;
     }
 
-    public void upgradeToRoyalMerchant(Merchant merchant) {
+    @Override
+    public void upgradeToRoyalMerchant(MerchantForm merchantForm) {
+        Merchant merchant = merchantForm.getMerchant();
+        merchant.setIsRoyal(true);
+        merchantRepository.save(merchant);
         try {
             emailService.sendRoyalMerchantRegistrationAcceptance(merchant.getEmail(), merchant.getName());
         } catch (MessagingException e) {
-            // Handle the exception (e.g., log it)
             e.printStackTrace();
         }
     }

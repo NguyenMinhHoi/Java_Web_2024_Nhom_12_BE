@@ -4,5 +4,6 @@ public enum ConditionType {
     ONLY_CATEGORY,
     ONLY_PRODUCT,
     ONLY_SHOP,
-    ALL_AVAILABLE
+    ALL_AVAILABLE,
+    MIN_COST
 }
