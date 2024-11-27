@@ -50,15 +50,6 @@ public class MerchantController {
         }
     }
 
-    @PostMapping("/test-approval")
-    public ResponseEntity<?> testApproval() {
-        Merchant testMerchant = new Merchant();
-        testMerchant.setEmail("tecaca64@gmail.com");  // Replace with your email
-        testMerchant.setName("Test Merchant");
-        merchantService.approveMerchantRegistration(testMerchant);
-        return ResponseEntity.ok("Approval email sent successfully");
-    }
-
     @GetMapping("/details/{merchantId}")
     public ResponseEntity<?> getDetailsMerchantShop(@PathVariable Long merchantId){
         MerchantDTO merchantDTO = merchantService.getMerchantByMerchantID(merchantId);

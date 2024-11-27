@@ -37,5 +37,10 @@ public class Voucher {
     private Instant startDate;
 
     private Boolean status;
+
+    @OneToOne
+    private Merchant merchant;
+
+    private Integer quantity;
     
 }
