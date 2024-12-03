@@ -23,6 +23,8 @@ public class Voucher {
 
     private VoucherType voucherType;
 
+    private String description;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private VoucherCondition voucherCondition;
 
@@ -38,7 +40,7 @@ public class Voucher {
 
     private Boolean status;
 
-    @OneToOne
+    @ManyToOne
     private Merchant merchant;
 
     private Integer quantity;

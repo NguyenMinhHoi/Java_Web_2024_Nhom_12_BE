@@ -80,6 +80,11 @@ public class MerchantServiceImpl implements MerchantService {
     }
 
     @Override
+    public void approveMerchantRegistration(Merchant merchant) {
+
+    }
+
+    @Override
     public Merchant createMerchant(Merchant merchant) {
         Optional<User> user = userService.findById(merchant.getUser().getId());
         if(user.isPresent()){

@@ -1,10 +1,10 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.Variant;
+import com.example.demo.model.*;
 import com.example.demo.model.Voucher;
-import com.example.demo.model.Voucher;
+import com.example.demo.service.UserService;
 import com.example.demo.service.VoucherService;
-import com.example.demo.model.VoucherCondition;
+import com.example.demo.service.dto.VoucherDTO;
 import com.example.demo.utils.enumeration.VoucherType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,6 +21,8 @@ public class VoucherController {
 
     @Autowired
     private VoucherService voucherService;
+    @Autowired
+    private UserService userService;
 
     @GetMapping
     public ResponseEntity<List<Voucher>> getAllVouchers() {
@@ -34,7 +36,7 @@ public class VoucherController {
     }
 
     @PostMapping
-    public ResponseEntity<Voucher> createVoucher(@RequestBody Voucher voucher) {
+    public ResponseEntity<Voucher> createVoucher(@RequestBody VoucherDTO voucher) {
         return ResponseEntity.status(HttpStatus.CREATED).body(voucherService.createVoucher(voucher));
     }
 
@@ -100,5 +102,27 @@ public class VoucherController {
     @PostMapping("/able/system")
     public ResponseEntity<List<Voucher>> getAbleVouchersBySystem(@RequestBody List<Variant> variants) {
         return ResponseEntity.ok(voucherService.getAbleVoucherBySystem(variants));
+    }
+
+    @GetMapping("/merchants/{merchantId}")
+    public ResponseEntity<List<Voucher>> getVouchersByMerchant(@PathVariable Long merchantId) {
+        return ResponseEntity.ok(voucherService.getVouchersByMerchant(merchantId));
+    }
+
+    @GetMapping("/system")
+    public ResponseEntity<List<Voucher>> getVoucherSystem() throws Exception {
+        User user = userService.getCurrentUser();
+        var ref = new Object() {
+            Boolean isAdmin = false;
+        };
+        user.getRoles().forEach(role -> {
+            if(role.getName().equals("ROLE_ADMIN")){
+                ref.isAdmin = true;
+            }
+        });
+        if(ref.isAdmin){
+            return ResponseEntity.ok(voucherService.getVouchersSystem());
+        }else
+            throw new Exception("Access denied");
     }
 }
