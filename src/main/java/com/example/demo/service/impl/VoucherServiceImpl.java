@@ -1,12 +1,16 @@
 package com.example.demo.service.impl;
 
-import com.example.demo.model.Product;
-import com.example.demo.model.Variant;
-import com.example.demo.model.Voucher;
-import com.example.demo.model.VoucherCondition;
+import com.example.demo.model.*;
+import com.example.demo.repository.CategoryRepository;
+import com.example.demo.repository.MerchantRepository;
+import com.example.demo.repository.VoucherConditionRepository;
 import com.example.demo.repository.VoucherRepository;
+import com.example.demo.service.CategoryService;
+import com.example.demo.service.MerchantService;
+import com.example.demo.service.ProductService;
 import com.example.demo.service.VoucherService;
 import com.example.demo.service.dto.OrderDTO;
+import com.example.demo.service.dto.VoucherDTO;
 import com.example.demo.utils.CodeUtils;
 import com.example.demo.utils.enumeration.ConditionType;
 import com.example.demo.utils.enumeration.VoucherType;
@@ -29,6 +33,20 @@ public class VoucherServiceImpl implements VoucherService {
     private VoucherRepository voucherRepository;
     @Autowired
     private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    @Autowired
+    private ProductService productService;
+
+    @Autowired
+    private CategoryService categoryService;
+
+    @Autowired
+    private VoucherConditionRepository voucherConditionRepository;
+    @Autowired
+    private MerchantService merchantService;
+    @Autowired
+    private MerchantRepository merchantRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @Override
     public List<Voucher> findAll() {
@@ -51,8 +69,61 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     @Override
-    public Voucher createVoucher(Voucher voucher) {
-        voucher.setCode(CodeUtils.generateVoucherCode(namedParameterJdbcTemplate));
+    public Voucher createVoucher(VoucherDTO voucherDTO) {
+        Voucher voucher = new Voucher();
+        if(voucherDTO.getMerchantId() == null) {
+            voucher.setCode(CodeUtils.generateVoucherCode(namedParameterJdbcTemplate));
+            voucherDTO.setConditionType(ConditionType.ALL_AVAILABLE);
+        }else{
+            voucher.setMerchant(merchantRepository.findById(voucherDTO.getMerchantId()).get());
+        }
+        voucher.setVoucherType(voucherDTO.getVoucherType());
+        voucher.setCode(voucherDTO.getCode());
+        VoucherCondition voucherCondition = new VoucherCondition();
+        voucherCondition.setConditionType(voucherDTO.getConditionType());
+        voucherCondition.setDescription(voucherDTO.getDescription());
+        switch (voucherCondition.getConditionType()) {
+            case ONLY_CATEGORY:
+                try {
+                    if (voucherDTO.getCategoryId() != null) {
+                        Category category = categoryRepository.findById(voucherDTO.getCategoryId()).get();
+                        if (category != null) {
+                            voucherCondition.setCategory(category);
+                            voucherConditionRepository.save(voucherCondition);
+                            System.out.println("Category set successfully: " + category.getId());
+                        } else {
+                            System.out.println("Category not found for id: " + voucherDTO.getCategoryId());
+                        }
+                    } else {
+                        System.out.println("CategoryId is null");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("Error setting category: " + e.getMessage());
+                }
+                break;
+            case ONLY_PRODUCT:
+                Set<Product> products = voucherDTO.getProducts().stream()
+                        .map(productId -> productService.findById(productId))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+                voucherCondition.setProduct(products);
+                break;
+            case MIN_COST:
+                voucherCondition.setMinPrice(voucherDTO.getMinPrice());
+                break;
+        }
+        voucherConditionRepository.save(voucherCondition);
+        voucher.setVoucherCondition(voucherCondition);
+        voucher.setActive(true);
+        voucher.setStartDate(voucherDTO.getStartDate());
+        voucher.setExpirationDate(voucherDTO.getExpirationDate());
+        voucher.setDiscount(voucherDTO.getDiscount());
+        voucher.setQuantity(voucherDTO.getQuantity());
+        voucher.setValueCondition(voucherDTO.getValueCondition());
+        voucher.setStatus(true);
+        voucher.setValueCondition(voucherDTO.getValueCondition());
+        voucher.setDescription(voucherDTO.getDescription());
         return save(voucher);
     }
 
@@ -161,10 +232,10 @@ public class VoucherServiceImpl implements VoucherService {
         List<Voucher> systemVouchers = findActiveVouchers();
         List<Voucher> result = new ArrayList<>();
         
-        List<OrderDTO> orderDTO = createOrderDTOFromVariants(variants);
+        List<OrderDTO> orderDTOs = createOrderDTOFromVariants(variants);
         
 //        for (Voucher voucher : systemVouchers) {
-//            if (checkVoucherAvailable(voucher)) {
+//            if (checkVoucherAvailable(voucher,orderDTO)) {
 //                result.add(voucher);
 //            }
 //        }
@@ -238,5 +309,18 @@ public class VoucherServiceImpl implements VoucherService {
     private static <T> Predicate<T> distinctByKey(Function<? super T, ?> keyExtractor) {
         Set<Object> seen = ConcurrentHashMap.newKeySet();
         return t -> seen.add(keyExtractor.apply(t));
+    }
+
+    @Override
+    public List<Voucher> getVouchersByMerchant(Long merchantId) {
+        return voucherRepository.findAll().stream()
+                .filter(voucher -> voucher.getMerchant() != null && voucher.getMerchant().getId().equals(merchantId))
+                .collect(Collectors.toList());
+    }
+    @Override
+    public List<Voucher> getVouchersSystem(){
+          List<Voucher> vouchers = voucherRepository.findAll();
+          vouchers = vouchers.stream().filter(voucher -> voucher.getMerchant() == null).collect(Collectors.toList());
+          return vouchers;
     }
 }

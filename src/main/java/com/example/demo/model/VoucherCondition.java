@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -23,8 +25,8 @@ public class VoucherCondition {
        @JoinColumn(name = "category_id")
        private Category category;
 
-       @ManyToOne
-       private Product product;
+       @ManyToMany
+       private Set<Product> product;
 
        private Double minPrice;
 }

@@ -16,7 +16,6 @@ public class MerchantFormServiceImpl implements MerchantFormService {
     @Autowired
     private MerchantFormRepository merchantFormRepository;
 
-    // Implement other methods from GenerateService...
 
     @Override
     public List<MerchantForm> findPendingMerchantForms() {
@@ -40,7 +39,7 @@ public class MerchantFormServiceImpl implements MerchantFormService {
 
     @Override
     public List<MerchantForm> findAll() {
-        return List.of();
+        return merchantFormRepository.findAll();
     }
 
     @Override

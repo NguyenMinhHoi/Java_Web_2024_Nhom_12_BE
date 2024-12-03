@@ -8,9 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
+@RestController//khaing dùng RestController để hô tr�� phương thức HTTP cho phía client
 @RequestMapping("/wishlists")
-@CrossOrigin("*")
+@CrossOrigin("*")//
 public class WishlistController {
        @Autowired
        private WishlistService wishlistService;
@@ -51,6 +51,4 @@ public class WishlistController {
             long followers = wishlistService.getMerchantFollowers(merchantId);
             return ResponseEntity.ok().body(followers);
        }
-
-
 }

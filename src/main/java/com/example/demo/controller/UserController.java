@@ -50,6 +50,10 @@ public class UserController {
     @GetMapping("/users")
     public ResponseEntity<Iterable<User>> showAllUser() {
         Iterable<User> users = userService.findAll();
+        for (User user : users) {
+            user.setPassword(null);
+            user.setConfirmPassword(null);
+        }
         return new ResponseEntity<>(users, HttpStatus.OK);
     }
 
