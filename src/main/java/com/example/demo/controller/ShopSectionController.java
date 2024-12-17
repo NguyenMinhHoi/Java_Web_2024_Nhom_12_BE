@@ -15,17 +15,17 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/shopsections")
 @CrossOrigin("*")
 public class ShopSectionController {
-      @Autowired
-      private ShopSectionService shopSectionService;
+    @Autowired
+    private ShopSectionService shopSectionService;
 
-      @Autowired
-      private MerchantService merchantService;
+    @Autowired
+    private MerchantService merchantService;
 
     @GetMapping("/all/{id}")
-      public ResponseEntity<Object> getAllShopSections(@PathVariable Long id) {
-            shopSectionService.findByName(id);
-            return ResponseEntity.ok().body(shopSectionService.findByName(id));
-      }
+    public ResponseEntity<Object> getAllShopSections(@PathVariable Long id) {
+        shopSectionService.findByName(id);
+        return ResponseEntity.ok().body(shopSectionService.findByName(id));
+    }
 
     @PostMapping("")
     public ResponseEntity<Object> saveShopSection(@RequestBody ShopSection shopSection) {

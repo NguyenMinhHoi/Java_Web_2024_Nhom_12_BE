@@ -31,7 +31,7 @@ public class ShopSectionServiceImpl implements ShopSectionService {
 
     @Override
     public void deleteById(Long id) {
-          shopSectionRepository.deleteById(id);
+        shopSectionRepository.deleteById(id);
     }
 
     @Override
