@@ -5,6 +5,7 @@ import com.example.demo.model.ShopSection;
 import com.example.demo.repository.ShopSectionRepository;
 import com.example.demo.service.MerchantService;
 import com.example.demo.service.ShopSectionService;
+import com.example.demo.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,10 @@ public class ShopSectionServiceImpl implements ShopSectionService {
     @Override
     public ShopSection save(ShopSection entity) {
         entity.setCreatedAt(new Date());
+        ShopSection exist = shopSectionRepository.findShopSectionByNameAndMerchantId(entity.getName(),entity.getMerchant().getId());
+        if(!CommonUtils.isEmpty(exist)){
+            return null;
+        }
         return shopSectionRepository.save(entity);
     }
 

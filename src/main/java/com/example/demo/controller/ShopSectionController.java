@@ -29,6 +29,7 @@ public class ShopSectionController {
 
     @PostMapping("")
     public ResponseEntity<Object> saveShopSection(@RequestBody ShopSection shopSection) {
+        ShopSection rs = shopSectionService.save(shopSection);
         return ResponseEntity.ok().body(shopSectionService.save(shopSection));
     }
 

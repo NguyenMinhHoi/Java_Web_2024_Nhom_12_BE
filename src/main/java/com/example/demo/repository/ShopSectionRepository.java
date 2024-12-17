@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface ShopSectionRepository extends JpaRepository<ShopSection, Long> {
     List<ShopSection> findAllByMerchantId(Long shopId);
+    ShopSection findShopSectionByNameAndMerchantId(String name,Long id);
 }
