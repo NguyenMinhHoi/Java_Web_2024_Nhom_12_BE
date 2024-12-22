@@ -3,7 +3,6 @@ package com.example.demo.service;
 import com.example.demo.model.*;
 import com.example.demo.service.dto.FilterDTO;
 import com.example.demo.service.dto.ProductDTO;
-import org.aspectj.weaver.ast.Var;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -25,6 +24,7 @@ public interface ProductService extends GenerateService<Product>{
 
     Variant getVariantByOption(List<OptionProduct> options);
     List<Product> getAllProductByShopId (Long shopId);
+    Page<ProductDTO> getAllProductByShopId (Long shopId, long page, int size);
 
     void addToCart(Long userId, Long productId, int quantity);
     List<Review> getProductReviews(Long productId, int page, int size);

@@ -21,23 +21,23 @@ public class WishlistController {
        @PostMapping("/product/{productId}")
        public void addProductToWishlist(@PathVariable long productId) {
            User user = userService.getCurrentUser();
-           wishlistService.addProductToWishlist(productId, user.getId());
+           wishlistService.addProductToWishlist( user.getId(),productId);
        }
 
        @PostMapping("/shop/{shopId}")
        public void addShopToWishlist(@PathVariable long shopId) {
            User user = userService.getCurrentUser();
-           wishlistService.addShopToWishlist(shopId, user.getId());
+           wishlistService.addShopToWishlist(user.getId(),shopId );
        }
 
        @DeleteMapping("/{productId}")
        public void removeProductFromWishlist(@PathVariable long productId,@RequestParam(name = "userId") long userId) {
-           wishlistService.removeProductFromWishlist(productId, userId);
+           wishlistService.removeProductFromWishlist(userId,productId );
        }
 
         @DeleteMapping("/{shopId}")
         public void removeShopFromWishlist(@PathVariable long shopId,@RequestParam(name = "userId") long userId) {
-            wishlistService.removeShopFromWishlist(shopId, userId);
+            wishlistService.removeShopFromWishlist(userId,shopId );
         }
 
         @GetMapping("/{userId}")

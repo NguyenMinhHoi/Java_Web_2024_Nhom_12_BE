@@ -2,6 +2,7 @@ package com.example.demo.repository;
 
 import com.example.demo.model.Category;
 import com.example.demo.model.Product;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,6 +27,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findDiscountedProducts(Pageable pageable);
 
     List<Product> findAllByMerchantId(Long merchantId);
+    Page<Product> findAllByMerchantId(Long merchantId, Pageable pageable);
 
     List<Product> findByCategoryAndIdNot(Category category, Long productId, Pageable pageable);
 

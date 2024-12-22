@@ -6,6 +6,7 @@ import com.example.demo.repository.MerchantRepository;
 import com.example.demo.repository.ProductRepository;
 import com.example.demo.service.*;
 import com.example.demo.service.dto.MerchantDTO;
+import com.example.demo.service.dto.ProductDTO;
 import com.example.demo.utils.CommonUtils;
 import com.example.demo.utils.enumeration.FormStatus;
 import com.example.demo.utils.enumeration.FormType;
@@ -134,7 +135,7 @@ public class MerchantServiceImpl implements MerchantService {
         if(merchantOptional.isPresent()) {
             Merchant merchant = merchantOptional.get();
             // tim cac san pham cua nguoi ban do bang id
-            List<Product> products = productService.getAllProductByShopId(merchant.getId());
+            List<ProductDTO> products = productService.getAllProductByShopId(merchant.getId(),1,10).getContent();
             // tim cac binh luan cua nguoi ban do
             Set<Review> reviews = new HashSet<>();
             products.stream().forEach(product ->{
@@ -146,7 +147,6 @@ public class MerchantServiceImpl implements MerchantService {
                     .builder()
                     .id(merchant.getId())
                     .description(merchant.getDescription())
-                    .variants(products.stream().map(product -> productService.toProductDTO(product)).collect(Collectors.toSet()))
                     .name(merchant.getName())
                     .sold(CommonUtils.isEmpty(merchant.getTotalSold()) ? 0 : merchant.getTotalSold().longValue())
                     .rating(merchant.getRating())

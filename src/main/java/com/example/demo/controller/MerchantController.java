@@ -2,9 +2,12 @@ package com.example.demo.controller;
 
 
 import com.example.demo.model.Merchant;
+import com.example.demo.model.Product;
 import com.example.demo.service.MerchantService;
 import com.example.demo.service.OrderService;
+import com.example.demo.service.ProductService;
 import com.example.demo.service.dto.MerchantDTO;
+import com.example.demo.service.dto.ProductDTO;
 import com.example.demo.service.impl.OrderServiceImpl;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -23,11 +27,13 @@ import java.util.Objects;
 public class MerchantController {
     private final MerchantService merchantService;
     private final OrderService orderService;
+    private final ProductService productService;
 
-    public MerchantController(MerchantService merchantService, OrderService orderService) {
+    public MerchantController(MerchantService merchantService, OrderService orderService, ProductService productService) {
         this.merchantService = merchantService;
 
         this.orderService = orderService;
+        this.productService = productService;
     }
 
     @PostMapping("")

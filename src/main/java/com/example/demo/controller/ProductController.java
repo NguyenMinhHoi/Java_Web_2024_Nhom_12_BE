@@ -10,6 +10,7 @@ import com.example.demo.service.ProductService;
 import com.example.demo.service.dto.FilterDTO;
 import com.example.demo.service.dto.ProductDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpEntity;
@@ -166,6 +167,12 @@ public class ProductController {
       public ResponseEntity<Object> filterProduct(@RequestBody FilterDTO filterDTO, @RequestParam int size, @RequestParam int page) {
           Pageable pageable = PageRequest.of(page-1, size);
           return ResponseEntity.ok(productService.findProductsByFilter(filterDTO, pageable));
+      }
+      @GetMapping("/merchant")
+      public ResponseEntity<Page<ProductDTO>> getProducts(@RequestParam(name="merchantId") Long merchantId,
+                                                          @RequestParam(name="page", defaultValue = "0") int page,
+                                                          @RequestParam(name="size", defaultValue = "10") int size) {
+            return new ResponseEntity<>(productService.getAllProductByShopId(merchantId,page,size), HttpStatus.OK);
       }
 
 }

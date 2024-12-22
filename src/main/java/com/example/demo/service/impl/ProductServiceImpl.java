@@ -14,15 +14,11 @@ import com.example.demo.utils.CodeUtils;
 import com.example.demo.utils.CommonUtils;
 import com.example.demo.utils.Const;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.beans.Transient;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -649,5 +645,21 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return new PageImpl<>(pageContent, pageable, filteredProducts.size());
+    }
+
+        @Override
+    public Page<ProductDTO> getAllProductByShopId(Long shopId, long page, int size) {
+        if(!CommonUtils.isEmpty(userService.getCurrentUser())){
+            AccessUtils.setAccessMerchant(namedParameterJdbcTemplate,userService.getCurrentUser().getId());
+        }
+        AccessUtils.setAccessMerchant(namedParameterJdbcTemplate, userService.getCurrentUser().getId());
+
+        Pageable pageable = PageRequest.of((int) page, size, Sort.by("createdDate").descending());
+        Page<Product> productPage = productRepository.findAllByMerchantId(shopId, pageable);
+
+        List<ProductDTO> products = productPage.getContent().stream().map(this::toProductDTO).collect(Collectors.toList());
+        Page<ProductDTO> productDTOPage = new PageImpl<>(products, pageable, productPage.getTotalElements());
+
+        return productDTOPage;
     }
 }
