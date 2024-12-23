@@ -30,12 +30,12 @@ public class WishlistController {
            wishlistService.addShopToWishlist(user.getId(),shopId );
        }
 
-       @DeleteMapping("/{productId}")
+       @DeleteMapping("/product/{productId}")
        public void removeProductFromWishlist(@PathVariable long productId,@RequestParam(name = "userId") long userId) {
            wishlistService.removeProductFromWishlist(userId,productId );
        }
 
-        @DeleteMapping("/{shopId}")
+        @DeleteMapping("/shop/{shopId}")
         public void removeShopFromWishlist(@PathVariable long shopId,@RequestParam(name = "userId") long userId) {
             wishlistService.removeShopFromWishlist(userId,shopId );
         }
